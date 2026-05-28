@@ -48,7 +48,7 @@ export function IsbnScanner({ onScan }: IsbnScannerProps) {
           { facingMode: 'environment' },
           {
             fps: 10,
-            qrbox: { width: 300, height: 120 },
+            qrbox: { width: 240, height: 160 },
             formatsToSupport: [
               Html5QrcodeSupportedFormats.EAN_13,
               Html5QrcodeSupportedFormats.EAN_8,
@@ -57,7 +57,7 @@ export function IsbnScanner({ onScan }: IsbnScannerProps) {
               Html5QrcodeSupportedFormats.CODE_128,
               Html5QrcodeSupportedFormats.CODE_39,
             ],
-            aspectRatio: 2.5,
+            aspectRatio: 1.5,
           },
           (text) => {
             if (scannedRef.current) return
@@ -113,7 +113,7 @@ export function IsbnScanner({ onScan }: IsbnScannerProps) {
               <div className="relative">
                 <div id="isbn-scanner-viewport" className="[&>video]:rounded-lg overflow-hidden rounded-lg" />
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  <div className="w-[300px] max-w-[85%] h-[120px] border-2 border-red-500/70 rounded-lg flex items-center">
+                  <div className="w-[240px] max-w-[85%] h-[160px] border-2 border-red-500/70 rounded-lg flex items-center">
                     <div className="w-full h-0.5 bg-red-500/60 animate-pulse" />
                   </div>
                 </div>
