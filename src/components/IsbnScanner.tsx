@@ -52,7 +52,7 @@ export function IsbnScanner({ onScan }: IsbnScannerProps) {
           { facingMode: 'environment' },
           {
             fps: 10,
-            qrbox: { width: 280, height: 60 },
+            qrbox: { width: 300, height: 120 },
           },
           (text) => {
             if (scannedRef.current) return
@@ -105,10 +105,17 @@ export function IsbnScanner({ onScan }: IsbnScannerProps) {
                 <Button variant="outline" size="sm" onClick={() => setOpen(false)}>关闭</Button>
               </div>
             ) : (
-              <div id="isbn-scanner-viewport" className="[&>video]:rounded-lg overflow-hidden rounded-lg" />
+              <div className="relative">
+                <div id="isbn-scanner-viewport" className="[&>video]:rounded-lg overflow-hidden rounded-lg" />
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  <div className="w-[300px] max-w-[85%] h-[120px] border-2 border-red-500/70 rounded-lg flex items-center">
+                    <div className="w-full h-0.5 bg-red-500/60 animate-pulse" />
+                  </div>
+                </div>
+              </div>
             )}
             <p className="text-xs text-muted-foreground text-center">
-              将书籍背面的条形码对准扫描框
+              将书籍背面的条形码对准红色扫描框
             </p>
           </div>
         </DialogContent>
