@@ -10,6 +10,8 @@ import { queryClient } from '@/queries/queryClient'
 import { router } from '@/router'
 import './index.css'
 
+let lastUserId: string | undefined
+
 function resolveName(meta?: Record<string, unknown>, profileName?: string | null, email?: string) {
   return (meta?.display_name as string)
     || (meta?.displayName as string)
@@ -41,8 +43,15 @@ function App() {
       if (!user) {
         setUser(null)
         setDisplayName('')
+        queryClient.clear()
+        lastUserId = undefined
         return
       }
+
+      if (lastUserId && lastUserId !== user.id) {
+        queryClient.clear()
+      }
+      lastUserId = user.id
 
       setUser(user as never)
       const profileName = await loadProfileName(user.id)

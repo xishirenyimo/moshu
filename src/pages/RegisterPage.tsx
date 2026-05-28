@@ -26,7 +26,7 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: RegisterInput) => {
     setLoading(true)
-    const { error } = await supabase.auth.signUp({
+    const { data: result, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
@@ -37,9 +37,12 @@ export default function RegisterPage() {
 
     if (error) {
       toast.error(transAuthError(error.message))
-    } else {
+    } else if (result.session) {
       toast.success('注册成功')
       navigate('/books')
+    } else {
+      toast.info('注册成功，请查看邮箱确认链接后再登录')
+      navigate('/login')
     }
   }
 

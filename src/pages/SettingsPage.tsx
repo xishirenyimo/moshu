@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -12,15 +13,24 @@ import {
 import { useDeleteAccount } from '@/hooks/useDeleteAccount'
 import { exportAllData } from '@/lib/export'
 import { importFromJSON } from '@/lib/import'
+import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/stores/authStore'
 import { toast } from 'sonner'
 
 export default function SettingsPage() {
+  const navigate = useNavigate()
   const [darkMode, setDarkMode] = useState(() =>
     document.documentElement.classList.contains('dark')
   )
   const [importing, setImporting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { mutate: deleteAccount, isPending: deleting } = useDeleteAccount()
+
+  const handleLogout = async () => {
+    useAuthStore.getState().setUser(null)
+    await supabase.auth.signOut()
+    navigate('/login', { replace: true })
+  }
 
   const toggleDarkMode = () => {
     const next = !darkMode
@@ -93,6 +103,21 @@ export default function SettingsPage() {
             onClick={() => fileInputRef.current?.click()}
           >
             {importing ? '导入中...' : '导入数据'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-xl border-border/50">
+        <CardHeader>
+          <CardTitle className="text-base">账户</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            className="w-full justify-start rounded-full"
+            onClick={handleLogout}
+          >
+            退出登录
           </Button>
         </CardContent>
       </Card>

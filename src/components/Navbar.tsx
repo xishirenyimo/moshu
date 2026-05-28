@@ -2,8 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
-import { Search, Plus, Settings, LogOut, User, Library, PenLine } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { Search, Plus, Settings, User, Library, PenLine } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useFilterStore } from '@/stores/filterStore'
 import { useState, useRef } from 'react'
@@ -22,12 +21,6 @@ export function Navbar() {
   const search = useFilterStore((s) => s.search)
   const [searchInput, setSearchInput] = useState(search)
   const timerRef = useRef<number | null>(null)
-
-  const handleLogout = async () => {
-    useAuthStore.getState().setUser(null)
-    await supabase.auth.signOut()
-    navigate('/login', { replace: true })
-  }
 
   const handleSearchChange = (value: string) => {
     setSearchInput(value)
@@ -71,9 +64,6 @@ export function Navbar() {
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <Settings className="h-4 w-4 mr-2" /> 设置
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" /> 退出登录
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
