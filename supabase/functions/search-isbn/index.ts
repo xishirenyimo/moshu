@@ -43,6 +43,20 @@ function isValidISBN(isbn: string): boolean {
   return false
 }
 
+async function fetchCoverDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const buf = await res.arrayBuffer()
+    const bytes = new Uint8Array(buf)
+    const base64 = btoa(String.fromCharCode(...bytes))
+    const contentType = res.headers.get('content-type') || 'image/jpeg'
+    return `data:${contentType};base64,${base64}`
+  } catch {
+    return null
+  }
+}
+
 async function searchOpenLibrary(isbn: string): Promise<BookResult['book'] | null> {
   const url = `https://openlibrary.org/isbn/${isbn}.json`
   const res = await fetch(url)
@@ -71,6 +85,9 @@ async function searchOpenLibrary(isbn: string): Promise<BookResult['book'] | nul
   const publisher: string | null =
     (Array.isArray(data.publishers) ? data.publishers[0] : data.publishers) ?? null
 
+  const coverUrl = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`
+  const coverDataUrl = await fetchCoverDataUrl(coverUrl)
+
   return {
     isbn,
     title,
@@ -78,7 +95,7 @@ async function searchOpenLibrary(isbn: string): Promise<BookResult['book'] | nul
     publisher,
     language: null,
     total_pages: data.number_of_pages ?? null,
-    cover_path: `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`,
+    cover_path: coverDataUrl,
     source: 'open_library',
   }
 }
@@ -95,6 +112,9 @@ async function searchGoogleBooks(isbn: string): Promise<BookResult['book'] | nul
   if (!data.items?.length) return null
 
   const vi = data.items[0].volumeInfo
+  const rawCoverUrl = vi.imageLinks?.thumbnail?.replace('http://', 'https://') ?? null
+  const coverDataUrl = rawCoverUrl ? await fetchCoverDataUrl(rawCoverUrl) : null
+
   return {
     isbn,
     title: vi.title ?? '未知书名',
@@ -102,7 +122,7 @@ async function searchGoogleBooks(isbn: string): Promise<BookResult['book'] | nul
     publisher: vi.publisher ?? null,
     language: vi.language ?? null,
     total_pages: vi.pageCount ?? null,
-    cover_path: vi.imageLinks?.thumbnail?.replace('http://', 'https://') ?? null,
+    cover_path: coverDataUrl,
     source: 'google_books',
   }
 }
@@ -141,7 +161,8 @@ serve(async (req: Request) => {
     if (googleResult) {
       // Fallback to OpenLibrary for cover if Google Books has none
       if (!googleResult.cover_path) {
-        googleResult.cover_path = `https://covers.openlibrary.org/b/isbn/${cleaned}-L.jpg`
+        const olCoverUrl = `https://covers.openlibrary.org/b/isbn/${cleaned}-M.jpg`
+        googleResult.cover_path = await fetchCoverDataUrl(olCoverUrl)
       }
       return Response.json(
         { found: true, book: googleResult } satisfies BookResult,
