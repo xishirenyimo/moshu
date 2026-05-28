@@ -139,6 +139,10 @@ serve(async (req: Request) => {
     // Try Google Books first if API key is configured, then OpenLibrary
     const googleResult = await searchGoogleBooks(cleaned)
     if (googleResult) {
+      // Fallback to OpenLibrary for cover if Google Books has none
+      if (!googleResult.cover_path) {
+        googleResult.cover_path = `https://covers.openlibrary.org/b/isbn/${cleaned}-L.jpg`
+      }
       return Response.json(
         { found: true, book: googleResult } satisfies BookResult,
         { headers: { 'Access-Control-Allow-Origin': '*' } },

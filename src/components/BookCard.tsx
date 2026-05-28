@@ -8,11 +8,15 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
 
 function CoverImage({ coverPath, title, className }: { coverPath: string | null; title: string; className: string }) {
   if (coverPath) {
+    const src = /^https?:\/\//.test(coverPath)
+      ? coverPath
+      : `${supabaseUrl}/storage/v1/object/public/book-covers/${coverPath}`
     return (
       <img
-        src={`${supabaseUrl}/storage/v1/object/public/book-covers/${coverPath}`}
+        src={src}
         alt={title}
         className={className}
+        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
       />
     )
   }

@@ -34,11 +34,13 @@ export default function AddBookPage() {
   const [isbnInput, setIsbnInput] = useState('')
   const [tagInput, setTagInput] = useState('')
   const [tags, setTags] = useState<string[]>([])
+  const [coverUrl, setCoverUrl] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<BookFormInput>({
     resolver: zodResolver(bookFormSchema),
@@ -53,6 +55,8 @@ export default function AddBookPage() {
     },
   })
 
+  const language = watch('language')
+
   const handleISBNSearch = async (override?: string) => {
     const target = (override ?? isbnInput).trim()
     if (!target) return
@@ -65,6 +69,7 @@ export default function AddBookPage() {
       setValue('language', result.book.language ?? '')
       setValue('totalPages', result.book.total_pages ?? null)
       setValue('isbn', result.book.isbn ?? undefined)
+      setCoverUrl(result.book.cover_path ?? null)
     }
   }
 
@@ -102,6 +107,7 @@ export default function AddBookPage() {
         noteStatus: data.noteStatus ?? '未进行',
         notes: data.notes ?? '',
         tagNames: tags,
+        coverPath: coverUrl ?? undefined,
       },
       {
         onSuccess: (result) => {
@@ -137,6 +143,17 @@ export default function AddBookPage() {
         </CardContent>
       </Card>
 
+      {coverUrl && (
+        <div className="flex justify-center">
+          <img
+            src={coverUrl}
+            alt="封面预览"
+            className="h-48 rounded-lg shadow-md object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        </div>
+      )}
+
       <div className="space-y-2">
         <Label htmlFor="title">书名 *</Label>
         <Input id="title" {...register('title')} placeholder="请输入书名" className="rounded-xl" />
@@ -161,7 +178,7 @@ export default function AddBookPage() {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>语言</Label>
-          <Select onValueChange={(v) => setValue('language', v ?? undefined)} defaultValue="">
+          <Select onValueChange={(v) => setValue('language', v ?? undefined)} value={language || ''}>
             <SelectTrigger className="rounded-xl">
               <SelectValue placeholder="不指定" />
             </SelectTrigger>

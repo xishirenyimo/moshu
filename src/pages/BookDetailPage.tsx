@@ -320,9 +320,10 @@ export default function BookDetailPage() {
             />
           ) : book.cover_path ? (
             <img
-              src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/book-covers/${book.cover_path}`}
+              src={/^https?:\/\//.test(book.cover_path) ? book.cover_path : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/book-covers/${book.cover_path}`}
               alt={book.title}
               className="w-28 sm:w-36 aspect-[3/4] rounded-xl object-cover shadow-lg"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
           ) : (
             <CoverPlaceholder title={editing ? form.title || book.title : book.title} className="w-28 sm:w-36 aspect-[3/4] rounded-xl text-2xl sm:text-3xl shadow-lg" />
