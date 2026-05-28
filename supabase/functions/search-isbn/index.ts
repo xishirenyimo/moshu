@@ -45,11 +45,21 @@ function isValidISBN(isbn: string): boolean {
 
 async function fetchCoverDataUrl(url: string): Promise<string | null> {
   try {
-    const res = await fetch(url)
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 5000)
+    const res = await fetch(url, { signal: controller.signal })
+    clearTimeout(timer)
     if (!res.ok) return null
     const buf = await res.arrayBuffer()
     const bytes = new Uint8Array(buf)
-    const base64 = btoa(String.fromCharCode(...bytes))
+    // Process in chunks to avoid stack overflow
+    const chunkSize = 8192
+    let binary = ''
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize)
+      binary += String.fromCharCode(...chunk)
+    }
+    const base64 = btoa(binary)
     const contentType = res.headers.get('content-type') || 'image/jpeg'
     return `data:${contentType};base64,${base64}`
   } catch {
@@ -86,7 +96,6 @@ async function searchOpenLibrary(isbn: string): Promise<BookResult['book'] | nul
     (Array.isArray(data.publishers) ? data.publishers[0] : data.publishers) ?? null
 
   const coverUrl = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`
-  const coverDataUrl = await fetchCoverDataUrl(coverUrl)
 
   return {
     isbn,
@@ -95,7 +104,7 @@ async function searchOpenLibrary(isbn: string): Promise<BookResult['book'] | nul
     publisher,
     language: null,
     total_pages: data.number_of_pages ?? null,
-    cover_path: coverDataUrl,
+    cover_path: coverUrl,  // Will be converted to data URL later
     source: 'open_library',
   }
 }
@@ -113,7 +122,6 @@ async function searchGoogleBooks(isbn: string): Promise<BookResult['book'] | nul
 
   const vi = data.items[0].volumeInfo
   const rawCoverUrl = vi.imageLinks?.thumbnail?.replace('http://', 'https://') ?? null
-  const coverDataUrl = rawCoverUrl ? await fetchCoverDataUrl(rawCoverUrl) : null
 
   return {
     isbn,
@@ -122,7 +130,7 @@ async function searchGoogleBooks(isbn: string): Promise<BookResult['book'] | nul
     publisher: vi.publisher ?? null,
     language: vi.language ?? null,
     total_pages: vi.pageCount ?? null,
-    cover_path: coverDataUrl,
+    cover_path: rawCoverUrl,  // Will be converted to data URL later if needed
     source: 'google_books',
   }
 }
@@ -156,24 +164,28 @@ serve(async (req: Request) => {
       )
     }
 
-    // Try Google Books first if API key is configured, then OpenLibrary
-    const googleResult = await searchGoogleBooks(cleaned)
-    if (googleResult) {
-      // Fallback to OpenLibrary for cover if Google Books has none
-      if (!googleResult.cover_path) {
-        const olCoverUrl = `https://covers.openlibrary.org/b/isbn/${cleaned}-M.jpg`
-        googleResult.cover_path = await fetchCoverDataUrl(olCoverUrl)
+    // Search Google Books and OpenLibrary in parallel
+    const [googleResult, openResult] = await Promise.all([
+      searchGoogleBooks(cleaned),
+      searchOpenLibrary(cleaned),
+    ])
+
+    const result = googleResult ?? openResult
+    if (result) {
+      // Convert cover URL to data URL (server-side proxy to bypass CDN blocks)
+      if (result.cover_path && /^https?:\/\//.test(result.cover_path)) {
+        const dataUrl = await fetchCoverDataUrl(result.cover_path)
+        if (dataUrl) {
+          result.cover_path = dataUrl
+        }
+      }
+      // Fallback to OpenLibrary cover
+      if (!result.cover_path) {
+        const fallbackCover = `https://covers.openlibrary.org/b/isbn/${cleaned}-M.jpg`
+        result.cover_path = await fetchCoverDataUrl(fallbackCover)
       }
       return Response.json(
-        { found: true, book: googleResult } satisfies BookResult,
-        { headers: { 'Access-Control-Allow-Origin': '*' } },
-      )
-    }
-
-    const openResult = await searchOpenLibrary(cleaned)
-    if (openResult) {
-      return Response.json(
-        { found: true, book: openResult } satisfies BookResult,
+        { found: true, book: result } satisfies BookResult,
         { headers: { 'Access-Control-Allow-Origin': '*' } },
       )
     }
