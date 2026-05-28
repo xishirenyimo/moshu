@@ -34,10 +34,6 @@ export function IsbnScanner({ onScan }: IsbnScannerProps) {
     const init = async () => {
       const scanner = new Html5Qrcode('isbn-scanner-viewport', {
         verbose: false,
-        useBarCodeDetectorIfSupported: true,
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true,
-        },
       })
 
       if (!active) {
